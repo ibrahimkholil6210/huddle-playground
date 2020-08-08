@@ -1,26 +1,44 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { Component } from 'react';
 import './App.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+class App extends Component {
+  state = {
+    isStreamAvailable: false,
+    streamUrl: null,
+    localStream: null
+  }
+
+  vidRef = React.createRef();
+
+  mediaReqHandler = async (e) => {
+    const stream = await window.navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true
+    });
+    this.setState({ isStreamAvailable: true });
+    this.vidRef.current.srcObject = stream;
+  }
+
+  mediaDisReqHandler = async (e) => {
+    const stream = await window.navigator.mediaDevices.getDisplayMedia();
+    this.setState({ isStreamAvailable: true });
+    this.vidRef.current.srcObject = stream;
+  }
+
+  render() {
+    return (
+      <div className="App">
+        <header className="App-header">
+          <p>Hello World!</p>
+          <button onClick={this.mediaReqHandler}>Click To Capture Video</button>
+          <button onClick={this.mediaDisReqHandler}>Click To Capture Screen</button>
+          {this.state.isStreamAvailable &&
+            <video autoPlay ref={this.vidRef} muted></video>
+          }
+        </header>
+      </div>
+    );
+  }
 }
 
 export default App;
