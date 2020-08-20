@@ -7,7 +7,9 @@ class Video extends Component {
 
     state = {
         roomid: null,
-        peer: null
+        peer: null,
+        userid: null,
+        localstream: null
     }
 
     localVideoRef = createRef();
@@ -39,12 +41,16 @@ class Video extends Component {
                 call.answer(stream);
                 call.on("stream", userVideoStream => {
                     this.addVideoStream(this.remoteVideoRef, userVideoStream);
-                })
-            })
-            io.on("user-connected", userid => {
-                this.connectToNewUser(userid, stream);
+                });
             });
-        })
+
+            this.setState({ localstream: stream })
+
+            io.on("user-connected", userid => {
+                this.state.userid = userid;
+                this.connectToNewUser(userid);
+            });
+        });
     }
 
     addVideoStream = (vidRef, stream) => {
@@ -54,9 +60,8 @@ class Video extends Component {
         });
     }
 
-    connectToNewUser = (userid, stream) => {
-        const call = this.state.peer.call(userid, stream);
-        console.log(this.state)
+    connectToNewUser = (userid) => {
+        const call = this.state.peer.call(userid, this.state.localstream);
         call.on("stream", userVideoStream => {
             this.addVideoStream(this.remoteVideoRef, userVideoStream);
         });
@@ -65,11 +70,26 @@ class Video extends Component {
         })
     }
 
+    getDisplayStream = async (e) => {
+        const stream = await window.navigator.mediaDevices.getDisplayMedia();
+
+        stream.oninactive = async () => {
+            const camStream = await window.navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            this.addVideoStream(this.localVideoRef, camStream);
+            this.state.peer.call(this.state.userid, camStream);
+        }
+
+        this.addVideoStream(this.localVideoRef, stream);
+        this.setState((prev) => prev.localstream = stream);
+        this.state.peer.call(this.state.userid, stream);
+    }
+
     render() {
         return (
             <div className="video-container">
                 <video muted ref={this.localVideoRef}></video>
-                <video ref={this.remoteVideoRef}></video>
+                <video muted ref={this.remoteVideoRef}></video>
+                <button onClick={this.getDisplayStream}>Share Screen</button>
             </div>
         );
     }
