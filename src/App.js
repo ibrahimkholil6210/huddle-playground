@@ -1,44 +1,18 @@
-import React, { Component } from 'react';
+import React from 'react';
+import { Switch, Route } from 'react-router-dom';
+import CreateRoom from './components/CreateRoom';
+import Video from './components/Video';
 import './App.css';
 
-class App extends Component {
-  state = {
-    isStreamAvailable: false,
-    streamUrl: null,
-    localStream: null
-  }
-
-  vidRef = React.createRef();
-
-  mediaReqHandler = async (e) => {
-    const stream = await window.navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true
-    });
-    this.setState({ isStreamAvailable: true });
-    this.vidRef.current.srcObject = stream;
-  }
-
-  mediaDisReqHandler = async (e) => {
-    const stream = await window.navigator.mediaDevices.getDisplayMedia();
-    this.setState({ isStreamAvailable: true });
-    this.vidRef.current.srcObject = stream;
-  }
-
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <p>Hello World!</p>
-          <button onClick={this.mediaReqHandler}>Click To Capture Video</button>
-          <button onClick={this.mediaDisReqHandler}>Click To Capture Screen</button>
-          {this.state.isStreamAvailable &&
-            <video autoPlay ref={this.vidRef} muted></video>
-          }
-        </header>
-      </div>
-    );
-  }
+const App = (props) => {
+  return (
+    <>
+      <Switch>
+        <Route path="/" exact component={CreateRoom} />
+        <Route path="/:roomid" component={Video} />
+      </Switch>
+    </>
+  );
 }
 
 export default App;
