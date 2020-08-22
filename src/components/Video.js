@@ -8,15 +8,17 @@ class Video extends Component {
     state = {
         roomid: null,
         peer: null,
-        userid: null,
-        localstream: null
+        localId: null,
+        localstream: null,
+        connection: null,
+        remoteId: null,
     }
 
     localVideoRef = createRef();
     remoteVideoRef = createRef();
+    io = ioClient('http://127.0.0.1:1337');
 
     componentDidMount() {
-        const io = ioClient('http://127.0.0.1:1337');
         const { roomid } = this.props.match.params;
         this.setState({ roomid })
 
@@ -28,9 +30,12 @@ class Video extends Component {
 
         this.setState({ peer: myPeer })
 
+
         myPeer.on('open', id => {
-            io.emit("join-room", roomid, id);
+            this.io.emit("join-room", roomid, id);
+            this.setState({ localId: id });
         });
+
 
         navigator.mediaDevices.getUserMedia({
             video: true,
@@ -46,11 +51,21 @@ class Video extends Component {
 
             this.setState({ localstream: stream })
 
-            io.on("user-connected", userid => {
-                this.state.userid = userid;
+            this.io.on("user-connected", userid => {
+                this.setState({ remoteId: userid });
+                this.io.emit("other-user", this.state.roomid, this.state.localId);
                 this.connectToNewUser(userid);
+
             });
+
+            this.io.on("other-user-info", id => {
+                if (this.state.remoteId === null) {
+                    this.setState({ remoteId: id });
+                }
+            });
+
         });
+
     }
 
     addVideoStream = (vidRef, stream) => {
@@ -67,7 +82,7 @@ class Video extends Component {
         });
         call.on("close", () => {
             this.remoteVideoRef.current.remove();
-        })
+        });
     }
 
     getDisplayStream = async (e) => {
@@ -76,12 +91,12 @@ class Video extends Component {
         stream.oninactive = async () => {
             const camStream = await window.navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             this.addVideoStream(this.localVideoRef, camStream);
-            this.state.peer.call(this.state.userid, camStream);
+            this.state.peer.call(this.state.remoteId, camStream);
         }
 
-        this.addVideoStream(this.localVideoRef, stream);
         this.setState((prev) => prev.localstream = stream);
-        this.state.peer.call(this.state.userid, stream);
+        this.addVideoStream(this.localVideoRef, this.state.localstream);
+        this.state.peer.call(this.state.remoteId, this.state.localstream);
     }
 
     render() {

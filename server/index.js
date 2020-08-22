@@ -12,5 +12,9 @@ io.on("connection", socket => {
         socket.join(roomid);
         socket.to(roomid).broadcast.emit("user-connected", userid);
     });
-    socket.emit("helloFromApi", "Hello my boy!");
+
+    socket.on("other-user", (roomid, userid) => {
+        socket.to(roomid).broadcast.emit("other-user-info", userid);
+    });
+
 })
